@@ -57,7 +57,7 @@ def projects(limit=1000, **filters):
     return api("/projects", params=query)
 
 
-def show_detail(project_id):
+def show_detail(project_id, key_prefix="detail"):
     detail = api(f"/projects/{project_id}")
     st.markdown(f"### Project Investigation · {detail['project_id']}")
     st.caption("Source data includes real allocation records. Expenditure and lifecycle values below are simulated prototype data.")
@@ -72,7 +72,7 @@ def show_detail(project_id):
                                    "Risk": [components.get("anomaly_risk", 0), components.get("compliance_risk", 0), components.get("financial_risk", 0), components.get("utilization_risk", 0), components.get("delay_risk", 0)]})
         fig = px.bar(chart_data, x="Risk", y="Risk factor", orientation="h", range_x=[0,100], color="Risk", color_continuous_scale=["#2e8b57", "#f0ad35", "#cb3c3c"])
         fig.update_layout(height=240, showlegend=False, coloraxis_showscale=False, margin=dict(l=0,r=0,t=5,b=0))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}-risk-chart-{project_id}")
     with col2:
         st.markdown("**Top applicable reasons**")
         reasons = detail["risk_explanation"].get("reasons", [])
@@ -98,7 +98,7 @@ def show_detail(project_id):
     fig.add_trace(go.Bar(name="Expected", x=[detail["expected_progress_percentage"]], y=["Progress"], orientation="h", marker_color="#8aa6c1"))
     fig.add_trace(go.Bar(name="Actual", x=[detail["project_progress_percentage"]], y=["Progress"], orientation="h", marker_color="#1e6594"))
     fig.update_layout(barmode="overlay", height=150, xaxis_range=[0,100], margin=dict(l=5,r=5,t=10,b=5))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}-progress-chart-{project_id}")
     st.caption(f"Status: **{detail['progress_status']}** — AT RISK when gap >10 pp; DELAY RISK when gap >25 pp. Prototype logic only.")
 
     st.subheader("Project Health")
@@ -125,13 +125,13 @@ def show_detail(project_id):
     statuses = ["PENDING REVIEW", "UNDER INVESTIGATION", "VERIFIED", "FALSE POSITIVE", "RESOLVED"]
     try: initial_idx = statuses.index(detail.get("review_status", "PENDING REVIEW"))
     except ValueError: initial_idx = 0
-    status = st.selectbox("Review Status", statuses, index=initial_idx, key=f"status-{project_id}")
-    comment = st.text_area("Reviewer Comment", value=detail.get("review_comment", ""), key=f"comment-{project_id}")
-    if st.button("Save Review", key=f"save-{project_id}"):
+    status = st.selectbox("Review Status", statuses, index=initial_idx, key=f"{key_prefix}-status-{project_id}")
+    comment = st.text_area("Reviewer Comment", value=detail.get("review_comment", ""), key=f"{key_prefix}-comment-{project_id}")
+    if st.button("Save Review", key=f"{key_prefix}-save-{project_id}"):
         api(f"/projects/{project_id}/review", method="put", json={"status": status, "comment": comment})
         st.success("Review updated for this session.")
     pdf = api(f"/projects/{project_id}/report")
-    st.download_button("Generate Investigation Report (PDF)", pdf, file_name=f"mplads-{project_id}-report.pdf", mime="application/pdf", key=f"report-{project_id}")
+    st.download_button("Generate Investigation Report (PDF)", pdf, file_name=f"mplads-{project_id}-report.pdf", mime="application/pdf", key=f"{key_prefix}-report-{project_id}")
 
 
 def main():
@@ -153,12 +153,12 @@ def main():
     with tabs[0]:
         counts = summary["risk_distribution"]
         fig = px.pie(names=list(counts), values=list(counts.values()), hole=.48, color=list(counts), color_discrete_map={"HIGH":"#c93c3c","MEDIUM":"#f0ad35","LOW":"#2e8b57"}, title="Risk Distribution")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="overview-risk-pie")
         states = api("/risk/distribution")
         state_data = [{"State":s,"HIGH":v["HIGH"],"MEDIUM":v["MEDIUM"],"LOW":v["LOW"],"Total":sum(v.values())} for s,v in states.items()]
         state_df = pd.DataFrame(state_data).sort_values("Total", ascending=False)
         fig=px.bar(state_df.head(20),x="State",y=["HIGH","MEDIUM","LOW"],barmode="stack",color_discrete_map={"HIGH":"#c93c3c","MEDIUM":"#f0ad35","LOW":"#2e8b57"},title="State-wise Risk Distribution")
-        st.plotly_chart(fig,use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="overview-state-bar")
 
     with tabs[1]:
         states = api("/states")["states"]
@@ -177,7 +177,7 @@ def main():
             choices=alertdf["project_id"].tolist()
             selected=st.selectbox("View Project",choices,key="alert-project")
             if st.button("Open selected alert",key="alert-open"): st.session_state["selected_project"]=selected
-            if st.session_state.get("selected_project") in choices: show_detail(st.session_state["selected_project"])
+            if st.session_state.get("selected_project") in choices: show_detail(st.session_state["selected_project"], key_prefix="alert")
         else: st.success("No alerts match these filters.")
 
     with tabs[2]:
@@ -193,7 +193,7 @@ def main():
     with tabs[3]:
         default=st.session_state.get("selected_project",project_ids[0] if project_ids else "")
         selected=st.selectbox("Project ID",project_ids,index=project_ids.index(default) if default in project_ids else 0,key="investigation-select")
-        if selected: show_detail(selected)
+        if selected: show_detail(selected, key_prefix="investigation")
 
     with tabs[4]:
         states=api("/states")["states"]
@@ -207,7 +207,7 @@ def main():
     with tabs[5]:
         candidates=[p for p in all_projects if p.get("risk_level")=="HIGH"] or all_projects
         selected=st.selectbox("Project for health view",[p["project_id"] for p in candidates],key="health-select")
-        if selected: show_detail(selected)
+        if selected: show_detail(selected, key_prefix="health")
 
     with tabs[6]:
         selected=st.selectbox("Project for report",project_ids,key="report-select")
@@ -215,7 +215,7 @@ def main():
             detail=api(f"/projects/{selected}")
             st.write(f"Report will include risk explanation, financial and progress monitoring, similarity, and human review details for **{selected}**.")
             payload=api(f"/projects/{selected}/report")
-            st.download_button("Download Investigation Report PDF",payload,file_name=f"mplads-{selected}-report.pdf",mime="application/pdf")
+            st.download_button("Download Investigation Report PDF",payload,file_name=f"mplads-{selected}-report.pdf",mime="application/pdf", key=f"report-tab-dl-{selected}")
             st.caption("Report contains simulated prototype monitoring values where source expenditure and progress records are unavailable.")
 
     st.divider()
