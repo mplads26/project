@@ -15,11 +15,12 @@ API_BASE = os.environ.get("API_BASE", "http://localhost:8000").rstrip("/")
 if not API_BASE.startswith("http://") and not API_BASE.startswith("https://"):
     if "." in API_BASE:
         API_BASE = f"https://{API_BASE}"
+    elif API_BASE in ("localhost", "127.0.0.1"):
+        API_BASE = f"http://{API_BASE}:8000"
     else:
-        if ":" not in API_BASE:
-            API_BASE = f"http://{API_BASE}:10000"
-        else:
-            API_BASE = f"http://{API_BASE}"
+        # On Render free tier, private internal networking is disabled.
+        # Blueprint host slug (e.g. 'mplads-api-faca') resolves via the public onrender.com domain.
+        API_BASE = f"https://{API_BASE}.onrender.com"
 st.set_page_config(page_title="MPLADS AI | Monitoring", page_icon="🛡️", layout="wide")
 st.markdown("""<style>
 .stApp {background:#f4f7fb}.block-container {padding-top:1.2rem}

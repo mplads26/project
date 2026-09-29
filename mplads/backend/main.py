@@ -197,7 +197,7 @@ async def get_dashboard_summary():
 
 @app.get("/projects", response_model=List[Dict[str, Any]])
 async def get_projects(
-    risk_level: Optional[str] = Query(None, regex="^(HIGH|MEDIUM|LOW)$"),
+    risk_level: Optional[str] = Query(None, pattern="^(HIGH|MEDIUM|LOW)$"),
     state: Optional[str] = None,
     house: Optional[str] = None,
     limit: int = Query(100, le=1000),
