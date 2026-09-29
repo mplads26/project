@@ -2,9 +2,9 @@ pandas
 numpy
 openpyxl
 scipy
-jupyter
 fastapi
 uvicorn
 streamlit
 plotly
 scikit-learn
+requests

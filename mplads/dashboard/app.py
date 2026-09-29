@@ -9,7 +9,17 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-API_BASE = "http://localhost:8000"
+import os
+
+API_BASE = os.environ.get("API_BASE", "http://localhost:8000").rstrip("/")
+if not API_BASE.startswith("http://") and not API_BASE.startswith("https://"):
+    if "." in API_BASE:
+        API_BASE = f"https://{API_BASE}"
+    else:
+        if ":" not in API_BASE:
+            API_BASE = f"http://{API_BASE}:10000"
+        else:
+            API_BASE = f"http://{API_BASE}"
 st.set_page_config(page_title="MPLADS AI | Monitoring", page_icon="🛡️", layout="wide")
 st.markdown("""<style>
 .stApp {background:#f4f7fb}.block-container {padding-top:1.2rem}
@@ -23,7 +33,7 @@ class APIError(Exception): pass
 
 def api(path, method="get", **kwargs):
     try:
-        response = requests.request(method, f"{API_BASE}{path}", timeout=20, **kwargs)
+        response = requests.request(method, f"{API_BASE}{path}", timeout=60, **kwargs)
         response.raise_for_status()
         return response.json() if "application/json" in response.headers.get("content-type", "") else response.content
     except requests.RequestException as exc:

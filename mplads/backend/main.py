@@ -243,7 +243,7 @@ async def get_projects(
 
 @app.get("/alerts", response_model=List[AlertItem])
 async def get_alerts(
-    risk_level: Optional[str] = Query(None, regex="^(HIGH|MEDIUM|LOW)$"),
+    risk_level: Optional[str] = Query(None, pattern="^(HIGH|MEDIUM|LOW)$"),
     limit: int = Query(200, le=200),
     alert_type: Optional[str] = None,
     state: Optional[str] = None
