@@ -14,10 +14,12 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run mplads/dashboard/app.py --server.port $PORT --server.address 0.0.0.0 --server.enableCORS false --server.enableXsrfProtection false
+    startCommand: streamlit run mplads/dashboard/app.py --server.port $PORT --server.address 0.0.0.0 --server.enableCORS false --server.enableXsrfProtection false --theme.base light
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.6
+      - key: STREAMLIT_THEME_BASE
+        value: light
       - key: API_BASE
         fromService:
           type: web

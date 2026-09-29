@@ -23,9 +23,13 @@ if not API_BASE.startswith("http://") and not API_BASE.startswith("https://"):
         API_BASE = f"https://{API_BASE}.onrender.com"
 st.set_page_config(page_title="MPLADS AI | Monitoring", page_icon="🛡️", layout="wide")
 st.markdown("""<style>
-.stApp {background:#f4f7fb}.block-container {padding-top:1.2rem}
+.stApp {background:#f4f7fb; color:#1e293b}
+.block-container {padding-top:1.2rem}
 .hero {background:#163a5f;color:white;padding:1.1rem 1.4rem;border-radius:10px;margin-bottom:1rem}
-[data-testid="stMetric"] {background:white;padding:14px;border-radius:9px;border:1px solid #e6ebf1}
+[data-testid="stMetric"] {background:white;padding:14px;border-radius:9px;border:1px solid #e6ebf1;box-shadow: 0 1px 3px rgba(0,0,0,0.05)}
+[data-testid="stMetricLabel"] {color: #475569 !important}
+[data-testid="stMetricValue"] {color: #0f172a !important}
+[data-testid="stHeader"] {background-color: rgba(244, 247, 251, 0.9) !important}
 </style>""", unsafe_allow_html=True)
 
 
